@@ -24,6 +24,7 @@ async fn main() {
   let options = poise::FrameworkOptions {
     commands: vec![
       commands::color::color(),
+      commands::birthday::birthday(),
       commands::sync_roles::sync_roles(),
     ],
     event_handler: |ctx, event, framework, data| {
