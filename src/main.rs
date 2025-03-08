@@ -1,13 +1,10 @@
 #![feature(iterator_try_collect)]
 extern crate core;
 
-mod color_utils;
 mod commands;
-mod db;
 mod events;
 mod utils;
-mod schema;
-mod models;
+mod db;
 
 use crate::events::login_event::login_event_handler;
 use dotenv::var;

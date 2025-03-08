@@ -1,4 +1,5 @@
-use crate::db::{establish_connection, get_birthday, insert_birthday, list_birthdays};
+use crate::db::connection::establish_connection;
+use crate::db::queries::{get_birthday, insert_birthday, list_birthdays};
 use crate::{Context, Error};
 use chrono::NaiveDate;
 use poise::serenity_prelude::Member;

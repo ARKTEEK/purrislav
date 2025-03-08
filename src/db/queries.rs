@@ -1,19 +1,10 @@
-use crate::models::{Birthday, NewBirthday};
-use crate::schema::birthdays::dsl::*;
+use crate::db::models::{Birthday, NewBirthday};
+use crate::db::schema::birthdays::dsl::*;
 use diesel::result::Error;
-use diesel::{Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
-use dotenv::dotenv;
-use std::env;
-
-pub fn establish_connection() -> SqliteConnection {
-  dotenv().ok();
-
-  let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file");
-  SqliteConnection::establish(&database_url).unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
-}
+use diesel::{ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
 
 pub fn insert_birthday(conn: &mut SqliteConnection, user: i64, dates: chrono::NaiveDate) -> Result<(), Error> {
-  use crate::schema::birthdays;
+  use crate::db::schema::birthdays;
 
   let new_birthday = NewBirthday {
     user_id: &user,
