@@ -25,7 +25,6 @@ async fn main() {
     commands: vec![
       commands::color::color(),
       commands::birthday::birthday(),
-      commands::sync_roles::sync_roles(),
     ],
     event_handler: |ctx, event, framework, data| {
       Box::pin(login_event_handler(
