@@ -1,74 +1,59 @@
-use native_db::*;
-use native_model::{native_model, Model};
-use once_cell::sync::Lazy;
-use poise::futures_util::{StreamExt, TryStreamExt};
-use serde::{Deserialize, Serialize};
-use std::error::Error;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use crate::models::{Birthday, NewBirthday};
+use crate::schema::birthdays::dsl::*;
+use diesel::result::Error;
+use diesel::{Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
+use dotenv::dotenv;
+use std::env;
 
-#[derive(Serialize, Deserialize, Debug)]
-#[native_model(id = 1, version = 1)]
-#[native_db]
-pub struct Birthday {
-  #[primary_key]
-  pub user_id: u64,
-  pub date: String,
+pub fn establish_connection() -> SqliteConnection {
+  dotenv().ok();
+
+  let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env file");
+  SqliteConnection::establish(&database_url).unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-impl Birthday {
-  fn new(user_id: u64, date: String) -> Self {
-    Birthday { user_id, date }
-  }
+pub fn insert_birthday(conn: &mut SqliteConnection, user: i64, dates: chrono::NaiveDate) -> Result<(), Error> {
+  use crate::schema::birthdays;
+
+  let new_birthday = NewBirthday {
+    user_id: &user,
+    date: &dates,
+  };
+
+  diesel::insert_into(birthdays::table)
+      .values(&new_birthday)
+      .on_conflict(user_id)
+      .do_update()
+      .set(date.eq(dates))
+      .execute(conn)?;
+
+  Ok(())
 }
-static MODELS: Lazy<Models> = Lazy::new(|| {
-  let mut models = Models::new();
-  models.define::<Birthday>().unwrap();
-  models
-});
 
-pub struct Database<'a> {
-  db: Arc<Mutex<native_db::Database<'a>>>,
+pub fn get_birthday(conn: &mut SqliteConnection, user: i64) -> Result<Option<Birthday>, Error> {
+  let birthday =
+      birthdays
+          .filter(user_id.eq(user))
+          .first::<Birthday>(conn)
+          .optional()?;
+
+  Ok(birthday)
 }
 
-impl<'a> Database<'a> {
-  pub fn new() -> Result<Self, db_type::Error> {
-    let db = Builder::new().create_in_memory(&MODELS)?;
-    Ok(Database {
-      db: Arc::new(Mutex::new(db)),
-    })
-  }
+pub fn delete_birthday(conn: &mut SqliteConnection, user: i64) -> Result<(), Error> {
+  diesel::delete(birthdays
+      .filter(user_id.eq(user)))
+      .execute(conn)
+      .expect("Error deleting birthdays.");
 
-  pub async fn add_user(&self, user_id: u64, date: String) -> Result<(), db_type::Error> {
-    let mut db = self.db.lock().await;
-    let birthday = Birthday::new(user_id, date);
-    let rw = db.rw_transaction()?;
-    rw.insert(birthday)?;
-    rw.commit()?;
-    Ok(())
-  }
+  Ok(())
+}
 
-  pub async fn remove_user(&self, user_id: u64) -> Result<(), db_type::Error> {
-    let mut db = self.db.lock().await;
-    let rw = db.rw_transaction()?;
-    let birthday: Birthday = rw.get().primary(user_id)?.unwrap();
+pub fn list_birthdays(conn: &mut SqliteConnection) -> Result<Vec<Birthday>, Error> {
+  let results = birthdays
+      .select(Birthday::as_select())
+      .load(conn)
+      .expect("Error loading birthdays");
 
-    rw.remove(birthday)?;
-    rw.commit()?;
-    Ok(())
-  }
-
-  pub async fn list_users(&self) -> Result<Vec<Birthday>, db_type::Error> {
-    let db = self.db.lock().await;
-    let r = db.r_transaction()?;
-    let birthdays: Vec<Birthday> = r.scan().primary()?.all()?.try_collect()?;
-    Ok(birthdays)
-  }
-
-  pub async fn get_user_birthday(&self, user_id: u64) -> Result<Birthday, db_type::Error> {
-    let db = self.db.lock().await;
-    let r = db.r_transaction()?;
-    let birthday: Birthday = r.get().primary(user_id)?.unwrap();
-    Ok(birthday)
-  }
+  Ok(results)
 }
