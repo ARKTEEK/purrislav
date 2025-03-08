@@ -32,7 +32,7 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
             ("", "".into(), false),
             ("📅 Next Celebration:", format!("In {} days!", days_until), false),
           ])
-          .footer(CreateEmbedFooter::new("We're excited for your upcoming celebrations!"));
+          .footer(CreateEmbedFooter::new("We're excited for the upcoming celebration!"));
 
       ctx.send(CreateReply::default().embed(embed).reply(true)).await?;
     }
@@ -41,7 +41,7 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
           .title("⚠️ Error")
           .description(format!("No birthday set for <@{}>.", user_id))
           .color(Color::RED)
-          .footer(CreateEmbedFooter::new("Please set your birthday with `/birthday set`"));
+          .footer(CreateEmbedFooter::new("Please set birthday with `/birthday set`"));
 
       ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
     }
@@ -75,7 +75,7 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
                 user_id, date
               ))
               .color(Color::DARK_GREEN)
-              .footer(CreateEmbedFooter::new("We're excited for your celebration!"));
+              .footer(CreateEmbedFooter::new("We're excited for the celebration!"));
 
           ctx.send(CreateReply::default().embed(success_embed).reply(true)).await?;
         }
