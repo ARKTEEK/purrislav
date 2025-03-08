@@ -1,6 +1,6 @@
 use crate::{Context, Error};
 use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::Role;
+use poise::serenity_prelude::{Member, Role};
 use serenity::GuildId;
 
 pub async fn get_self_role(
@@ -22,4 +22,12 @@ pub async fn get_self_role(
   }
 
   Ok(None)
+}
+
+pub fn get_user_id(ctx: &Context<'_>, member: Option<Member>) -> i64 {
+  if let Some(member) = member {
+    u64::from(member.user.id) as i64
+  } else {
+    u64::from(ctx.author().id) as i64
+  }
 }

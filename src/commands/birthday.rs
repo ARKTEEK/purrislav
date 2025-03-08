@@ -1,16 +1,11 @@
 use crate::db::connection::establish_connection;
 use crate::db::queries::{get_birthday, insert_birthday, list_birthdays};
+use crate::utils::date_utils::{days_until_next_birthday, format_date};
+use crate::utils::user_utils::get_user_id;
 use crate::{Context, Error};
 use chrono::NaiveDate;
-use poise::serenity_prelude::Member;
-
-fn get_user_id(ctx: &Context<'_>, member: Option<Member>) -> i64 {
-  if let Some(member) = member {
-    u64::from(member.user.id) as i64
-  } else {
-    u64::from(ctx.author().id) as i64
-  }
-}
+use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, Member};
+use poise::CreateReply;
 
 #[poise::command(slash_command, subcommands("list", "set", "info"), subcommand_required)]
 pub async fn birthday(_: Context<'_>) -> Result<(), Error> {
@@ -24,19 +19,40 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
 
   match get_birthday(conn, user_id) {
     Ok(Some(birthday)) => {
-      ctx.reply(format!(
-        "Birthday for <@{}>: {}",
-        user_id, birthday.date
-      ))
-          .await?;
+      let formatted_birthday = format_date(birthday.date);
+
+      let days_until = days_until_next_birthday(birthday.date);
+
+      let embed = CreateEmbed::new()
+          .title("🎂 Birthday Information")
+          .description("Here's the birthday info you requested!")
+          .color(Color::GOLD)
+          .fields(vec![
+            ("🎉 Birthday:", formatted_birthday, false),
+            ("", "".into(), false),
+            ("📅 Next Celebration:", format!("In {} days!", days_until), false),
+          ])
+          .footer(CreateEmbedFooter::new("We're excited for your upcoming celebrations!"));
+
+      ctx.send(CreateReply::default().embed(embed).reply(true)).await?;
     }
     Ok(None) => {
-      ctx.reply(format!("No birthday set for <@{}>.", user_id))
-          .await?;
+      let error_embed = CreateEmbed::new()
+          .title("⚠️ Error")
+          .description(format!("No birthday set for <@{}>.", user_id))
+          .color(Color::RED)
+          .footer(CreateEmbedFooter::new("Please set your birthday with `/birthday set`"));
+
+      ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
     }
     Err(e) => {
-      ctx.reply(format!("Error retrieving birthday: {}", e))
-          .await?;
+      let error_embed = CreateEmbed::new()
+          .title("⚠️ Error")
+          .description(format!("Error retrieving birthday: {}", e))
+          .color(Color::RED)
+          .footer(CreateEmbedFooter::new("Please try again later"));
+
+      ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
     }
   }
 
@@ -52,24 +68,39 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
 
       match insert_birthday(conn, user_id, parsed_date) {
         Ok(_) => {
-          ctx.reply(format!(
-            "Birthday for <@{}> has been set to {}.",
-            user_id, date
-          ))
-              .await?;
+          let success_embed = CreateEmbed::new()
+              .title("🎉 Birthday Set Successfully!")
+              .description(format!(
+                "Birthday for <@{}> has been set to **{}**.",
+                user_id, date
+              ))
+              .color(Color::DARK_GREEN)
+              .footer(CreateEmbedFooter::new("We're excited for your celebration!"));
+
+          ctx.send(CreateReply::default().embed(success_embed).reply(true)).await?;
         }
         Err(e) => {
-          ctx.reply(format!("❌ Error setting birthday: {}", e))
-              .await?;
+          let error_embed = CreateEmbed::new()
+              .title("⚠️ Error")
+              .description(format!("There was an error setting the birthday: {}", e))
+              .color(Color::RED)
+              .footer(CreateEmbedFooter::new("Please try again later"));
+
+          ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
         }
       }
     }
     Err(_) => {
-      ctx.reply(format!(
-        "❌ Error: '{}' is not a valid date. Please use the format YYYY-MM-DD.",
-        date
-      ))
-          .await?;
+      let invalid_date_embed = CreateEmbed::new()
+          .title("⚠️ Error")
+          .description(format!(
+            "'{}' is not a valid date. Please use the format **YYYY-MM-DD**.",
+            date
+          ))
+          .color(Color::RED)
+          .footer(CreateEmbedFooter::new("Example: 2024-12-15"));
+
+      ctx.send(CreateReply::default().embed(invalid_date_embed).reply(true)).await?;
     }
   }
 
@@ -83,21 +114,39 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
   match list_birthdays(conn) {
     Ok(birthdays) => {
       if birthdays.is_empty() {
-        ctx.reply("No birthdays set in the database.").await?;
+        let empty_embed = CreateEmbed::new()
+            .title("🎉 No Birthdays Set")
+            .description("There are currently no birthdays set.")
+            .color(Color::ORANGE)
+            .footer(CreateEmbedFooter::new("Maybe set a birthday and celebrate!"));
+
+        ctx.send(CreateReply::default().embed(empty_embed).reply(true)).await?;
       } else {
-        let reply = birthdays.iter().fold(
-          String::from("List of all birthdays:\n"),
-          |mut acc, birthday| {
-            acc.push_str(&format!("<@{}>: {}\n", birthday.user_id, birthday.date));
-            acc
-          },
-        );
-        ctx.reply(reply).await?;
+        let mut birthday_list = String::new();
+        for birthday in &birthdays {
+          birthday_list.push_str(&format!("<@{}>: {}\n", birthday.user_id, birthday.date));
+        }
+
+        let birthdays_embed = CreateEmbed::new()
+            .title("🎂 List of All Birthdays")
+            .description("Here are the birthdays currently set:")
+            .color(Color::GOLD)
+            .fields(vec![
+              ("", birthday_list, false),
+            ])
+            .footer(CreateEmbedFooter::new("We love celebrating with you!"));
+
+        ctx.send(CreateReply::default().embed(birthdays_embed).reply(true)).await?;
       }
     }
     Err(e) => {
-      ctx.reply(format!("Error retrieving birthdays: {}", e))
-          .await?;
+      let error_embed = CreateEmbed::new()
+          .title("⚠️ Error")
+          .description(format!("There was an error retrieving the birthdays: {}", e))
+          .color(Color::RED)
+          .footer(CreateEmbedFooter::new("Please try again later."));
+
+      ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
     }
   }
 

@@ -1,7 +1,8 @@
 use crate::utils::color_utils::ColorUtils;
 use crate::utils::user_utils::get_self_role;
 use crate::{Context, Error};
-use poise::serenity_prelude::{Color, EditRole};
+use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, EditRole};
+use poise::CreateReply;
 
 #[poise::command(slash_command)]
 pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
@@ -20,11 +21,15 @@ pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
             role.edit(&ctx, EditRole::from_role(&role).colour(color))
                 .await?;
 
-            ctx.reply(format!(
-              "✅ Successfully updated the color of your role to '#{}'",
-              hex_color
-            ))
-                .await?;
+            let success_embed = CreateEmbed::new()
+                .title("🎨 Color Updated!")
+                .description(format!(
+                  "Your role color has been updated to **#{hex_color}**."
+                ))
+                .color(color)
+                .footer(CreateEmbedFooter::new("Enjoy your new color!"));
+
+            ctx.send(CreateReply::default().embed(success_embed).reply(true)).await?;
           }
           None => {
             let role_name = format!("{}", user_id);
@@ -49,22 +54,39 @@ pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
                 .edit_role_position(&ctx, new_role_id, highest_position)
                 .await?;
 
-            ctx.reply(format!(
-              "✅ Created a new role with color '#{}' and assigned it to you.",
-              hex_color
-            ))
-                .await?;
+            let success_embed = CreateEmbed::new()
+                .title("🎨 New Role Created!")
+                .description(format!(
+                  "A new role with color **#{hex_color}** has been created and assigned to you."
+                ))
+                .color(Color::from_rgb(r, g, b))
+                .footer(CreateEmbedFooter::new("Enjoy your new role!"));
+
+            ctx.send(CreateReply::default().embed(success_embed).reply(true)).await?;
           }
         }
       }
       Err(e) => {
-        let response = format!("❌ Error: {}", e);
-        ctx.reply(response).await?;
+        let error_embed = CreateEmbed::new()
+            .title("❌ Error")
+            .description(format!("Error: {}", e))
+            .color(Color::RED)
+            .footer(CreateEmbedFooter::new("Please provide a valid color code."));
+
+        ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
       }
     },
     Err(e) => {
-      let response = format!("❌ Error: {}", e);
-      ctx.reply(response).await?;
+      let error_embed = CreateEmbed::new()
+          .title("❌ Invalid Color Format")
+          .description(format!(
+            "The provided color code **{}** is invalid. Please use a valid hex color code (e.g., #RRGGBB).",
+            color
+          ))
+          .color(Color::RED)
+          .footer(CreateEmbedFooter::new("Example: #FF5733"));
+
+      ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
     }
   }
 
