@@ -9,6 +9,7 @@ mod db;
 use crate::events::login_event::login_event_handler;
 use dotenv::var;
 use poise::serenity_prelude::{ClientBuilder, Error, GatewayIntents};
+use std::fmt::Debug;
 
 type Context<'a> = poise::Context<'a, Data, Error>;
 pub struct Data {}
@@ -22,6 +23,7 @@ async fn main() {
     commands: vec![
       commands::color::color(),
       commands::birthday::birthday(),
+      commands::settings::settings(),
     ],
     event_handler: |ctx, event, framework, data| {
       Box::pin(login_event_handler(
@@ -44,8 +46,10 @@ async fn main() {
       .options(options)
       .build();
 
+
   let client = ClientBuilder::new(token, intents)
       .framework(framework)
       .await;
+
   client.unwrap().start().await.unwrap();
 }
