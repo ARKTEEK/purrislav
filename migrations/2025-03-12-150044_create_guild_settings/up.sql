@@ -5,3 +5,5 @@ CREATE TABLE guild_settings
     guild_id                 BIGINT                            NOT NULL,
     announcements_channel_id BIGINT
 );
+
+CREATE UNIQUE INDEX guild_id_unique_index ON guild_settings (guild_id);
