@@ -1,5 +1,5 @@
 use crate::db::connection::establish_connection;
-use crate::db::queries::{get_birthday, insert_birthday, list_birthdays};
+use crate::db::queries::{delete_birthday_by_object, get_birthday, insert_birthday, list_birthdays};
 use crate::utils::date_utils::{days_until_next_birthday, format_date};
 use crate::utils::user_utils::get_user_id;
 use crate::{Context, Error};
@@ -60,10 +60,57 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
   Ok(())
 }
 
-// TODO: Implement removal of set birthdays
 #[poise::command(slash_command)]
-async fn delete(ctx: Context<'_>, member: Member) -> Result<(), Error> {
+async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
+  let user_id = get_user_id(&ctx, member);
+  let guild_id = ctx.guild_id().expect("Guild ID is required");
   let conn = &mut establish_connection();
+
+  match get_birthday(conn, user_id, i64::from(guild_id)) {
+    Ok(Some(birthday)) => {
+      match delete_birthday_by_object(conn, &birthday) {
+        Ok(_) => {
+          let success_embed = CreateEmbed::new()
+              .title("🎉 Birthday Deleted Successfully!")
+              .description(format!(
+                "Birthday for <@{}> has been deleted.",
+                user_id
+              ))
+              .color(Color::DARK_GREEN)
+              .footer(CreateEmbedFooter::new("You can always set your birthday again!"));
+
+          ctx.send(CreateReply::default().embed(success_embed).reply(true)).await?;
+        }
+        Err(e) => {
+          let error_embed = CreateEmbed::new()
+              .title("⚠️ Error")
+              .description(format!("There was an error deleting the birthday: {}", e))
+              .color(Color::RED)
+              .footer(CreateEmbedFooter::new("Please try again later."));
+
+          ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
+        }
+      }
+    }
+    Ok(None) => {
+      let no_birthday_embed = CreateEmbed::new()
+          .title("⚠️ No Birthday Found")
+          .description(format!("No birthday found for <@{}>.", user_id))
+          .color(Color::RED)
+          .footer(CreateEmbedFooter::new("Ensure the birthday has been set."));
+
+      ctx.send(CreateReply::default().embed(no_birthday_embed).reply(true)).await?;
+    }
+    Err(e) => {
+      let error_embed = CreateEmbed::new()
+          .title("⚠️ Error")
+          .description(format!("There was an error checking the birthday: {}", e))
+          .color(Color::RED)
+          .footer(CreateEmbedFooter::new("Please try again later."));
+
+      ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
+    }
+  }
 
   Ok(())
 }

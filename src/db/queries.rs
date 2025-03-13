@@ -24,7 +24,6 @@ pub fn insert_birthday(conn: &mut SqliteConnection, user: i64, guild_id: i64, da
   Ok(())
 }
 
-
 pub fn get_birthday(conn: &mut SqliteConnection, user: i64, guild_id: i64) -> Result<Option<Birthday>, Error> {
   let birthday = birthdays::table
       .filter(birthdays::user_id.eq(user))
@@ -51,11 +50,22 @@ pub fn get_birthdays_today(conn: &mut SqliteConnection) -> Result<Vec<Birthday>,
   Ok(results)
 }
 
-pub fn delete_birthday(conn: &mut SqliteConnection, user: i64) -> Result<(), Error> {
+pub fn delete_birthday(conn: &mut SqliteConnection, user: i64, guild: i64) -> Result<(), Error> {
   diesel::delete(birthdays::table
       .filter(birthdays::user_id.eq(user)))
+      .filter(birthdays::guild_id.eq(guild))
       .execute(conn)
       .expect("Error deleting birthdays.");
+
+  Ok(())
+}
+
+pub fn delete_birthday_by_object(conn: &mut SqliteConnection, birthday: &Birthday) -> Result<(), Error> {
+  diesel::delete(birthdays::table
+      .filter(birthdays::user_id.eq(birthday.user_id))
+      .filter(birthdays::guild_id.eq(birthday.guild_id)))
+      .execute(conn)
+      .expect("Error deleting birthday.");
 
   Ok(())
 }
