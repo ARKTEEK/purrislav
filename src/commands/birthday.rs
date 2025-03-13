@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, Member};
 use poise::CreateReply;
 
-#[poise::command(slash_command, subcommands("list", "set", "info"), subcommand_required)]
+#[poise::command(slash_command, subcommands("list", "set", "info", "delete"), subcommand_required)]
 pub async fn birthday(_: Context<'_>) -> Result<(), Error> {
   Ok(())
 }
@@ -15,9 +15,10 @@ pub async fn birthday(_: Context<'_>) -> Result<(), Error> {
 #[poise::command(slash_command)]
 async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
   let user_id = get_user_id(&ctx, member);
+  let guild_id = ctx.guild_id().expect("Guild ID is required");
   let conn = &mut establish_connection();
 
-  match get_birthday(conn, user_id) {
+  match get_birthday(conn, user_id, i64::from(guild_id)) {
     Ok(Some(birthday)) => {
       let formatted_birthday = format_date(birthday.date);
 
@@ -39,7 +40,7 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
     Ok(None) => {
       let error_embed = CreateEmbed::new()
           .title("⚠️ Error")
-          .description(format!("No birthday set for <@{}>.", user_id))
+          .description(format!("No birthday set for <@{}> in this server.", user_id))
           .color(Color::RED)
           .footer(CreateEmbedFooter::new("Please set birthday with `/birthday set`"));
 
@@ -59,14 +60,23 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
   Ok(())
 }
 
+// TODO: Implement removal of set birthdays
+#[poise::command(slash_command)]
+async fn delete(ctx: Context<'_>, member: Member) -> Result<(), Error> {
+  let conn = &mut establish_connection();
+
+  Ok(())
+}
+
 #[poise::command(slash_command)]
 async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(), Error> {
   match NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
     Ok(parsed_date) => {
       let user_id = get_user_id(&ctx, member);
+      let guild_id = ctx.guild_id().expect("Guild ID is required");
       let conn = &mut establish_connection();
 
-      match insert_birthday(conn, user_id, parsed_date) {
+      match insert_birthday(conn, user_id, i64::from(guild_id), parsed_date) {
         Ok(_) => {
           let success_embed = CreateEmbed::new()
               .title("🎉 Birthday Set Successfully!")
@@ -107,6 +117,7 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
   Ok(())
 }
 
+// TODO: Implement paginated embed message
 #[poise::command(slash_command)]
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
   let conn = &mut establish_connection();

@@ -3,9 +3,8 @@ CREATE TABLE birthdays
 (
     id                  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     user_id             BIGINT                            NOT NULL,
+    guild_id            BIGINT                            NOT NULL,
     date                DATE                              NOT NULL,
-    announced_this_year BOOLEAN                           NOT NULL
+    announced_this_year BOOLEAN                           NOT NULL,
+    UNIQUE (user_id, guild_id)
 );
-
--- Add a unique constraint to user_id
-CREATE UNIQUE INDEX user_id_unique_index ON birthdays (user_id);

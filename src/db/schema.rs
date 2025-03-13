@@ -4,6 +4,7 @@ diesel::table! {
     birthdays (id) {
         id -> Integer,
         user_id -> BigInt,
+        guild_id -> BigInt,
         date -> Date,
         announced_this_year -> Bool,
     }
