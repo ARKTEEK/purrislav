@@ -5,11 +5,16 @@ mod commands;
 mod events;
 mod utils;
 mod db;
+pub mod scheduler;
 
+use crate::db::connection::establish_connection;
 use crate::events::login_event::login_event_handler;
 use dotenv::var;
-use poise::serenity_prelude::{ClientBuilder, Error, GatewayIntents};
+use poise::serenity_prelude::{ClientBuilder, Error, GatewayIntents, Http};
+use scheduler::start_scheduler;
 use std::fmt::Debug;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 type Context<'a> = poise::Context<'a, Data, Error>;
 pub struct Data {}
@@ -30,7 +35,6 @@ async fn main() {
         ctx.clone(),
         event.clone(),
         framework,
-        data,
       ))
     },
     ..Default::default()
@@ -46,10 +50,23 @@ async fn main() {
       .options(options)
       .build();
 
-
-  let client = ClientBuilder::new(token, intents)
+  let mut client = ClientBuilder::new(token, intents)
       .framework(framework)
-      .await;
+      .await
+      .expect("Failed to build Client.");
 
-  client.unwrap().start().await.unwrap();
+  let arc_http: Arc<Http> = client.http.clone();
+  let conn = Arc::new(Mutex::new(establish_connection()));
+
+  tokio::spawn({
+    let arc_http = arc_http.clone();
+    let db_pool = conn.clone();
+    async move {
+      if let Err(e) = start_scheduler(arc_http, db_pool).await {
+        eprintln!("Error occurred while running scheduler: {}", e);
+      }
+    }
+  });
+
+  client.start().await.unwrap();
 }

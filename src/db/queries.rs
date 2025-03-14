@@ -18,7 +18,7 @@ pub fn insert_birthday(conn: &mut SqliteConnection, user: i64, guild_id: i64, da
       .values(&new_birthday)
       .on_conflict((birthdays::user_id, birthdays::guild_id))
       .do_update()
-      .set(birthdays::date.eq(date))
+      .set((birthdays::date.eq(date), birthdays::announced_this_year.eq(false)))
       .execute(conn)?;
 
   Ok(())
@@ -91,6 +91,30 @@ pub fn reset_announced_flags(conn: &mut SqliteConnection) -> Result<(), Error> {
   diesel::update(birthdays::table)
       .set(birthdays::announced_this_year.eq(false))
       .execute(conn)?;
+
+  Ok(())
+}
+
+pub fn reset_announced_flags_if_not_today(conn: &mut SqliteConnection) -> Result<(), Error> {
+  let today = Local::today().naive_utc();
+  let today_month_day = format!("{:02}-{:02}", today.month(), today.day());
+
+  let query = format!(
+    "SELECT * FROM birthdays WHERE announced_this_year = 1 AND strftime('%m-%d', date) != '{}'",
+    today_month_day
+  );
+
+  let birthdays_to_reset = sql_query(query)
+      .load::<Birthday>(conn)?;
+
+  if !birthdays_to_reset.is_empty() {
+    let ids_to_reset: Vec<i32> = birthdays_to_reset.iter().map(|b| b.id).collect();
+
+    diesel::update(birthdays::table)
+        .filter(birthdays::id.eq_any(ids_to_reset))
+        .set(birthdays::announced_this_year.eq(false))
+        .execute(conn)?;
+  }
 
   Ok(())
 }

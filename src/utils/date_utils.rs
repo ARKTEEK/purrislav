@@ -1,4 +1,4 @@
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate};
 
 pub fn format_date(date: NaiveDate) -> String {
   let month_name = date.format("%B").to_string();
@@ -25,4 +25,19 @@ pub fn days_until_next_birthday(birthday: NaiveDate) -> i64 {
 
   let duration = next_birthday.signed_duration_since(today);
   duration.num_days()
+}
+
+pub fn format_announcment_date(date: NaiveDate) -> String {
+  date.format("%m-%d").to_string()
+}
+
+pub fn calculate_age(birthday: NaiveDate) -> i32 {
+  let today = Local::today().naive_utc();
+  let mut age = today.year() - birthday.year();
+
+  if today.month() < birthday.month() || (today.month() == birthday.month() && today.day() < birthday.day()) {
+    age -= 1;
+  }
+
+  age
 }
