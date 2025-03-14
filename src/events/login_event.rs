@@ -6,11 +6,12 @@ pub async fn login_event_handler(
   ctx: Context,
   event: FullEvent,
   _framework: FrameworkContext<'_, Data, Error>,
-  data: &Data,
 ) -> Result<(), Error> {
   match event {
     FullEvent::Ready { data_about_bot, .. } => {
-      println!("Logged in as {}", data_about_bot.user.name);
+      println!("Logged in as {} in {} guilds.",
+               data_about_bot.user.name,
+               ctx.cache.guild_count());
     }
     _ => {}
   }
