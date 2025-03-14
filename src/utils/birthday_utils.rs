@@ -1,8 +1,9 @@
 use crate::db::models::Birthday;
 use crate::db::queries::{get_announcement_channel, get_birthdays_today, reset_announced_flags_if_not_today, update_announced_value};
 use crate::utils::date_utils::{calculate_age, format_announcment_date};
+use crate::utils::embed_utils::create_birthday_embed;
 use diesel::SqliteConnection;
-use poise::serenity_prelude::{Channel, ChannelId, Color, CreateEmbed, CreateEmbedFooter, CreateMessage, Http};
+use poise::serenity_prelude::{Channel, ChannelId, CreateMessage, Http};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -91,12 +92,3 @@ fn get_birthday_details(birthday_entries: &[Birthday]) -> (String, Vec<(String, 
   (user_mentions, birthday_details)
 }
 
-fn create_birthday_embed(user_mentions: String) -> CreateEmbed {
-  CreateEmbed::new()
-      .title("🎉 **Happy Birthday**!")
-      .color(Color::GOLD)
-      .fields(vec![
-        ("📅 Birthdays Today:", user_mentions, false),
-      ])
-      .footer(CreateEmbedFooter::new("Don't forget to set your birthdays!"))
-}

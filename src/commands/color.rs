@@ -1,4 +1,5 @@
 use crate::utils::color_utils::ColorUtils;
+use crate::utils::embed_utils::create_error_embed;
 use crate::utils::user_utils::get_self_role;
 use crate::{Context, Error};
 use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, EditRole};
@@ -76,17 +77,12 @@ pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
         ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
       }
     },
-    Err(e) => {
-      let error_embed = CreateEmbed::new()
-          .title("❌ Invalid Color Format")
-          .description(format!(
-            "The provided color code **{}** is invalid. Please use a valid hex color code (e.g., #RRGGBB).",
-            color
-          ))
-          .color(Color::RED)
-          .footer(CreateEmbedFooter::new("Example: #FF5733"));
+    Err(_) => {
+      let embed = create_error_embed(
+        format!("The provided color code **{}** is invalid.", color),
+        "Example: #FF5733".to_string());
 
-      ctx.send(CreateReply::default().embed(error_embed).reply(true)).await?;
+      ctx.send(CreateReply::default().embed(embed).reply(true)).await?;
     }
   }
 
