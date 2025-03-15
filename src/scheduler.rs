@@ -8,7 +8,7 @@ use tokio_cron_scheduler::{Job, JobScheduler, JobSchedulerError};
 pub async fn start_scheduler(http: Arc<Http>, db_pool: Arc<Mutex<SqliteConnection>>) -> Result<(), JobSchedulerError> {
   let scheduler = JobScheduler::new().await?;
 
-  let task = Job::new("0 * * * *", move |_uuid, _l| {
+  let task = Job::new("0 0 * * * *", move |_uuid, _l| {
     let http = http.clone();
     let db_pool = db_pool.clone();
 
