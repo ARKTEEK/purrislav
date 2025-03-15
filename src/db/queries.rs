@@ -70,8 +70,9 @@ pub fn delete_birthday_by_object(conn: &mut SqliteConnection, birthday: &Birthda
   Ok(())
 }
 
-pub fn list_birthdays(conn: &mut SqliteConnection) -> Result<Vec<Birthday>, Error> {
+pub fn list_birthdays(conn: &mut SqliteConnection, guild_id: i64) -> Result<Vec<Birthday>, Error> {
   let results = birthdays::table
+      .filter(birthdays::guild_id.eq(guild_id))
       .select(Birthday::as_select())
       .load(conn)
       .expect("Error loading birthdays");

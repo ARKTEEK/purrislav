@@ -1,11 +1,13 @@
 use crate::db::connection::establish_connection;
+use crate::db::models::Birthday;
 use crate::db::queries::{delete_birthday_by_object, get_birthday, insert_birthday, list_birthdays};
-use crate::utils::date_utils::{days_until_next_birthday, format_date};
-use crate::utils::embed_utils::{create_birthday_delete_embed, create_birthday_info_embed, create_birthday_set_embed, create_error_embed};
+use crate::utils::birthday_utils::sort_birthdays_by_upcoming_date;
+use crate::utils::date_utils::{calculate_age, days_until_next_birthday, format_birthday_with_age, format_date};
+use crate::utils::embed_utils::{create_birthday_delete_embed, create_birthday_info_embed, create_birthday_set_embed, create_empty_birthday_embed, create_error_embed};
 use crate::utils::user_utils::get_user_id;
 use crate::{Context, Error};
-use chrono::NaiveDate;
-use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, Member};
+use chrono::{NaiveDate, Utc};
+use poise::serenity_prelude::{Color, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, Member};
 use poise::CreateReply;
 
 #[poise::command(slash_command, subcommands("list", "set", "info", "delete"), subcommand_required)]
@@ -130,46 +132,111 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
   Ok(())
 }
 
-// TODO: Implement paginated embed message
 #[poise::command(slash_command)]
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
   let conn = &mut establish_connection();
+  let guild_id = ctx.guild_id().expect("Guild ID is required");
 
-  match list_birthdays(conn) {
-    Ok(birthdays) => {
+  match list_birthdays(conn, i64::from(guild_id)) {
+    Ok(mut birthdays) => {
       if birthdays.is_empty() {
-        let empty_embed = CreateEmbed::new()
-            .title("🎉 No Birthdays Set")
-            .description("There are currently no birthdays set.")
-            .color(Color::ORANGE)
-            .footer(CreateEmbedFooter::new("Maybe set a birthday and celebrate!"));
-
-        ctx.send(CreateReply::default().embed(empty_embed).reply(true)).await?;
+        ctx.send(CreateReply::default().embed(create_empty_birthday_embed()).reply(true)).await?;
       } else {
-        let mut birthday_list = String::new();
-        for birthday in &birthdays {
-          birthday_list.push_str(&format!("<@{}>: {}\n", birthday.user_id, birthday.date));
-        }
+        sort_birthdays_by_upcoming_date(&mut birthdays);
 
-        let birthdays_embed = CreateEmbed::new()
-            .title("🎂 List of All Birthdays")
-            .description("Here are the birthdays currently set:")
-            .color(Color::GOLD)
-            .fields(vec![
-              ("", birthday_list, false),
-            ])
-            .footer(CreateEmbedFooter::new("We love celebrating with you!"));
+        let pages = create_birthday_list_pages(&birthdays);
 
-        ctx.send(CreateReply::default().embed(birthdays_embed).reply(true)).await?;
+        paginate_birthday_list(ctx, &pages).await?;
       }
     }
     Err(e) => {
       let embed = create_error_embed(
         format!("Error while getting the birthdays: {}", e),
-        "Please try again later.".to_string());
-
+        "Please try again later.".to_string(),
+      );
       ctx.send(CreateReply::default().embed(embed).reply(true)).await?;
     }
+  }
+
+  Ok(())
+}
+
+fn create_birthday_list_pages(birthdays: &[Birthday]) -> Vec<String> {
+  let page_size = 5;
+  birthdays
+      .chunks(page_size)
+      .map(|chunk| {
+        chunk.iter().map(|birthday| {
+          let formatted_birthday = format_birthday_with_age(birthday);
+          format!("<@{}>: {} ({} years old)\n", birthday.user_id, formatted_birthday, calculate_age(birthday.date))
+        }).collect::<String>()
+      })
+      .collect()
+}
+
+async fn paginate_birthday_list(
+  ctx: Context<'_>,
+  pages: &[String],
+) -> Result<(), Error> {
+  let ctx_id = ctx.id();
+  let prev_button_id = format!("{}prev", ctx_id);
+  let next_button_id = format!("{}next", ctx_id);
+
+  let reply = {
+    let components = CreateActionRow::Buttons(vec![
+      CreateButton::new(&prev_button_id).emoji('◀'),
+      CreateButton::new(&next_button_id).emoji('▶'),
+    ]);
+
+    CreateReply::default()
+        .embed(
+          CreateEmbed::new()
+              .title("🎂 Birthday List")
+              .description(&pages[0])
+              .color(Color::BLUE)
+              .footer(CreateEmbedFooter::new("Page 1 of 1"))
+              .timestamp(Utc::now())
+        )
+        .components(vec![components])
+  };
+
+  ctx.send(reply).await?;
+
+  let mut current_page = 0;
+  let total_pages = pages.len();
+
+  while let Some(press) = ComponentInteractionCollector::new(ctx)
+      .filter(move |press| press.data.custom_id.starts_with(&ctx_id.to_string()))
+      .timeout(std::time::Duration::from_secs(3600 * 24))
+      .await
+  {
+    if press.data.custom_id == next_button_id {
+      current_page += 1;
+      if current_page >= total_pages {
+        current_page = 0;
+      }
+    } else if press.data.custom_id == prev_button_id {
+      current_page = current_page.checked_sub(1).unwrap_or(total_pages - 1);
+    } else {
+      continue;
+    }
+
+    press
+        .create_response(
+          ctx.serenity_context(),
+          CreateInteractionResponse::UpdateMessage(
+            CreateInteractionResponseMessage::new()
+                .embed(
+                  CreateEmbed::new()
+                      .title("🎂 Birthday List")
+                      .description(&pages[current_page])
+                      .color(Color::GOLD)
+                      .footer(CreateEmbedFooter::new(format!("Page {} of {}", current_page + 1, total_pages)))
+                      .timestamp(Utc::now())
+                ),
+          ),
+        )
+        .await?;
   }
 
   Ok(())

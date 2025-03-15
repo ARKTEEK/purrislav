@@ -1,6 +1,6 @@
 use crate::db::models::Birthday;
 use crate::db::queries::{get_announcement_channel, get_birthdays_today, reset_announced_flags_if_not_today, update_announced_value};
-use crate::utils::date_utils::{calculate_age, format_announcment_date};
+use crate::utils::date_utils::{calculate_age, days_until_next_birthday, format_announcment_date};
 use crate::utils::embed_utils::create_birthday_embed;
 use diesel::SqliteConnection;
 use poise::serenity_prelude::{Channel, ChannelId, CreateMessage, Http};
@@ -53,7 +53,11 @@ pub async fn announce_birthday_to_guild(
         let embed = create_birthday_embed(user_mentions);
         channel.send_message(http, CreateMessage::default().embed(embed)).await?;
 
-        let birthday_ids = birthday_entries.iter().map(|birthday| birthday.id).collect::<Vec<i32>>();
+        let birthday_ids = birthday_entries
+            .iter()
+            .map(|birthday| birthday.id)
+            .collect::<Vec<i32>>();
+
         update_announced_value(conn, birthday_ids)?;
       }
       Ok(_) => {
@@ -92,3 +96,10 @@ fn get_birthday_details(birthday_entries: &[Birthday]) -> (String, Vec<(String, 
   (user_mentions, birthday_details)
 }
 
+pub fn sort_birthdays_by_upcoming_date(birthdays: &mut Vec<Birthday>) {
+  birthdays.sort_by(|a, b| {
+    let days_until_a = days_until_next_birthday(a.date);
+    let days_until_b = days_until_next_birthday(b.date);
+    days_until_a.cmp(&days_until_b)
+  });
+}

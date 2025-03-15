@@ -1,3 +1,4 @@
+use chrono::Utc;
 use poise::serenity_prelude::{ChannelId, Color, CreateEmbed, CreateEmbedFooter, Mentionable};
 
 pub fn create_birthday_embed(user_mentions: String) -> CreateEmbed {
@@ -53,4 +54,12 @@ pub fn create_settings_embed(channel: ChannelId) -> CreateEmbed {
       .description(format!("Announcments channel has been set to **{}**.", channel.mention()))
       .color(Color::DARK_GREEN)
       .footer(CreateEmbedFooter::new("Announcments gonna be send there!"))
+}
+
+pub fn create_empty_birthday_embed() -> CreateEmbed {
+  CreateEmbed::new()
+      .title("🎉 No Birthdays Set!")
+      .description("It looks like there are no birthdays set for this guild yet.")
+      .color(Color::ORANGE)
+      .footer(CreateEmbedFooter::new("Set your birthdays and make the guild special!"))
 }
