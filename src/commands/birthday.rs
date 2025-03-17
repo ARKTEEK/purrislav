@@ -27,7 +27,7 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
       let days_until = days_until_next_birthday(birthday.date);
       let embed = create_birthday_info_embed(formatted_birthday, days_until);
 
-      ctx.send(CreateReply::default().embed(embed)).await?;
+      ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     }
     Ok(None) => {
       let error_embed = create_error_embed(
@@ -35,7 +35,7 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
         "You can set birthday with /birthday set".to_string(),
       );
 
-      ctx.send(CreateReply::default().embed(error_embed)).await?;
+      ctx.send(CreateReply::default().embed(error_embed).ephemeral(true)).await?;
     }
     Err(e) => {
       let error_embed = create_error_embed(
@@ -43,7 +43,7 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
         "Please try again later.".to_string(),
       );
 
-      ctx.send(CreateReply::default().embed(error_embed)).await?;
+      ctx.send(CreateReply::default().embed(error_embed).ephemeral(true)).await?;
     }
   }
 
@@ -62,7 +62,7 @@ async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
         Ok(_) => {
           let embed = create_birthday_delete_embed(user_id);
 
-          ctx.send(CreateReply::default().embed(embed)).await?;
+          ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
         }
         Err(e) => {
           let error_embed = create_error_embed(
@@ -70,7 +70,7 @@ async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
             "Please try again later.".to_string(),
           );
 
-          ctx.send(CreateReply::default().embed(error_embed)).await?;
+          ctx.send(CreateReply::default().embed(error_embed).ephemeral(true)).await?;
         }
       }
     }
@@ -80,7 +80,7 @@ async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
         "Birthday was not set.".to_string(),
       );
 
-      ctx.send(CreateReply::default().embed(error_embed)).await?;
+      ctx.send(CreateReply::default().embed(error_embed).ephemeral(true)).await?;
     }
     Err(e) => {
       let error_embed = create_error_embed(
@@ -88,7 +88,7 @@ async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
         "Please try again later".to_string(),
       );
 
-      ctx.send(CreateReply::default().embed(error_embed)).await?;
+      ctx.send(CreateReply::default().embed(error_embed).ephemeral(true)).await?;
     }
   }
 
@@ -107,7 +107,7 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
         Ok(_) => {
           let embed = create_birthday_set_embed(user_id, date);
 
-          ctx.send(CreateReply::default().embed(embed)).await?;
+          ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
         }
         Err(e) => {
           let error_embed = create_error_embed(
@@ -115,7 +115,7 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
             "Please try again later".to_string(),
           );
 
-          ctx.send(CreateReply::default().embed(error_embed)).await?;
+          ctx.send(CreateReply::default().embed(error_embed).ephemeral(true)).await?;
         }
       }
     }
@@ -125,7 +125,7 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
         "Example: 2001-12-15".to_string(),
       );
 
-      ctx.send(CreateReply::default().embed(error_embed)).await?;
+      ctx.send(CreateReply::default().embed(error_embed).ephemeral(true)).await?;
     }
   }
 
@@ -140,7 +140,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
   match list_birthdays(conn, i64::from(guild_id)) {
     Ok(mut birthdays) => {
       if birthdays.is_empty() {
-        ctx.send(CreateReply::default().embed(create_empty_birthday_embed())).await?;
+        ctx.send(CreateReply::default().embed(create_empty_birthday_embed()).ephemeral(true)).await?;
       } else {
         sort_birthdays_by_upcoming_date(&mut birthdays);
 
@@ -154,7 +154,7 @@ async fn list(ctx: Context<'_>) -> Result<(), Error> {
         format!("Error while getting the birthdays: {}", e),
         "Please try again later.".to_string(),
       );
-      ctx.send(CreateReply::default().embed(embed)).await?;
+      ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     }
   }
 
@@ -200,7 +200,7 @@ async fn paginate_birthday_list(
         .components(vec![components])
   };
 
-  ctx.send(reply).await?;
+  ctx.send(reply.ephemeral(true)).await?;
 
   let mut current_page = 0;
   let total_pages = pages.len();
@@ -233,7 +233,7 @@ async fn paginate_birthday_list(
                       .color(Color::GOLD)
                       .footer(CreateEmbedFooter::new(format!("Page {} of {}", current_page + 1, total_pages)))
                       .timestamp(Utc::now())
-                ),
+                ).ephemeral(true),
           ),
         )
         .await?;

@@ -30,7 +30,7 @@ pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
                 .color(color)
                 .footer(CreateEmbedFooter::new("Enjoy your new color!"));
 
-            ctx.send(CreateReply::default().embed(success_embed)).await?;
+            ctx.send(CreateReply::default().embed(success_embed).ephemeral(true)).await?;
           }
           None => {
             let role_name = format!("{}", user_id);
@@ -63,13 +63,13 @@ pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
                 .color(Color::from_rgb(r, g, b))
                 .footer(CreateEmbedFooter::new("Enjoy your new role!"));
 
-            ctx.send(CreateReply::default().embed(success_embed)).await?;
+            ctx.send(CreateReply::default().embed(success_embed).ephemeral(true)).await?;
           }
         }
       }
       Err(e) => {
         let embed = create_error_embed(format!("Error: {}", e), "Please provide a valid color code.".to_string());
-        ctx.send(CreateReply::default().embed(embed)).await?;
+        ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
       }
     },
     Err(_) => {
@@ -77,7 +77,7 @@ pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
         format!("The provided color code **{}** is invalid.", color),
         "Example: #FF5733".to_string());
 
-      ctx.send(CreateReply::default().embed(embed)).await?;
+      ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     }
   }
 
