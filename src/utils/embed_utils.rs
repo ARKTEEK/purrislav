@@ -1,4 +1,3 @@
-use chrono::Utc;
 use poise::serenity_prelude::{ChannelId, Color, CreateEmbed, CreateEmbedFooter, Mentionable};
 
 pub fn create_birthday_embed(user_mentions: String) -> CreateEmbed {
@@ -18,7 +17,6 @@ pub fn create_birthday_info_embed(formatted_birthday: String, days_until: i64) -
       .color(Color::GOLD)
       .fields(vec![
         ("🎉 Birthday:", formatted_birthday, false),
-        ("", "".into(), false),
         ("📅 Next Celebration:", format!("In {} days!", days_until), false),
       ])
       .footer(CreateEmbedFooter::new("We're excited for the upcoming celebration!"))
@@ -63,3 +61,4 @@ pub fn create_empty_birthday_embed() -> CreateEmbed {
       .color(Color::ORANGE)
       .footer(CreateEmbedFooter::new("Set your birthdays and make the guild special!"))
 }
+
