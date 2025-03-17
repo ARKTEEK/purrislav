@@ -19,14 +19,14 @@ async fn announcments(ctx: Context<'_>, channel: ChannelId) -> Result<(), Error>
     Ok(_) => {
       let embed = create_settings_embed(channel);
 
-      ctx.send(CreateReply::default().embed(embed).reply(true)).await?;
+      ctx.send(CreateReply::default().embed(embed)).await?;
     }
     Err(e) => {
       let embed = create_error_embed(
         format!("Error while setting announcements channel: {}", e),
         "Please try again later.".to_string());
 
-      ctx.send(CreateReply::default().embed(embed).reply(true)).await?;
+      ctx.send(CreateReply::default().embed(embed)).await?;
     }
   }
 
