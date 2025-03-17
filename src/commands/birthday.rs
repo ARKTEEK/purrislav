@@ -15,6 +15,7 @@ pub async fn birthday(_: Context<'_>) -> Result<(), Error> {
   Ok(())
 }
 
+/// Shows birthday info for a specified member (or your own if none is specified).
 #[poise::command(slash_command)]
 async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
   let user_id = get_user_id(&ctx, member);
@@ -50,6 +51,7 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
   Ok(())
 }
 
+/// Deletes the birthday of a specified member (or your own if none is specified).
 #[poise::command(slash_command)]
 async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
   let user_id = get_user_id(&ctx, member);
@@ -95,8 +97,9 @@ async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
   Ok(())
 }
 
+/// Sets the birthday for a specified member (or your own if none is specified).
 #[poise::command(slash_command)]
-async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(), Error> {
+async fn set(ctx: Context<'_>, member: Option<Member>, #[description = "e.g, 1999-01-01"] date: String) -> Result<(), Error> {
   match NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
     Ok(parsed_date) => {
       let user_id = get_user_id(&ctx, member);
@@ -132,6 +135,7 @@ async fn set(ctx: Context<'_>, member: Option<Member>, date: String) -> Result<(
   Ok(())
 }
 
+/// Lists all birthdays set in the server.
 #[poise::command(slash_command)]
 async fn list(ctx: Context<'_>) -> Result<(), Error> {
   let conn = &mut establish_connection();

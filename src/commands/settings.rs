@@ -10,6 +10,7 @@ pub async fn settings(_: Context<'_>) -> Result<(), Error> {
   Ok(())
 }
 
+/// Sets the channel for birthday announcements.
 #[poise::command(slash_command)]
 async fn announcments(ctx: Context<'_>, channel: ChannelId) -> Result<(), Error> {
   let guild_i = ctx.guild_id().unwrap();

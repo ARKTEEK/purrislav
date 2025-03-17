@@ -5,8 +5,9 @@ use crate::{Context, Error};
 use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, EditRole};
 use poise::CreateReply;
 
+/// Sets your username color to the specified hex code (e.g., #ff5733).
 #[poise::command(slash_command)]
-pub async fn color(ctx: Context<'_>, color: String) -> Result<(), Error> {
+pub async fn color(ctx: Context<'_>, #[description = "e.g., #ff5733"] color: String) -> Result<(), Error> {
   match ColorUtils::validate_hex_color(&color) {
     Ok(_) => match ColorUtils::hex_to_colour(&color) {
       Ok((r, g, b)) => {
