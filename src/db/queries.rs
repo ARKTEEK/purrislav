@@ -50,17 +50,7 @@ pub fn get_birthdays_today(conn: &mut SqliteConnection) -> Result<Vec<Birthday>,
   Ok(results)
 }
 
-pub fn delete_birthday(conn: &mut SqliteConnection, user: i64, guild: i64) -> Result<(), Error> {
-  diesel::delete(birthdays::table
-      .filter(birthdays::user_id.eq(user)))
-      .filter(birthdays::guild_id.eq(guild))
-      .execute(conn)
-      .expect("Error deleting birthdays.");
-
-  Ok(())
-}
-
-pub fn delete_birthday_by_object(conn: &mut SqliteConnection, birthday: &Birthday) -> Result<(), Error> {
+pub fn delete_birthday(conn: &mut SqliteConnection, birthday: &Birthday) -> Result<(), Error> {
   diesel::delete(birthdays::table
       .filter(birthdays::user_id.eq(birthday.user_id))
       .filter(birthdays::guild_id.eq(birthday.guild_id)))
@@ -89,14 +79,6 @@ pub fn update_announced_value(conn: &mut SqliteConnection, birthday_ids: Vec<i32
 }
 
 pub fn reset_announced_flags(conn: &mut SqliteConnection) -> Result<(), Error> {
-  diesel::update(birthdays::table)
-      .set(birthdays::announced_this_year.eq(false))
-      .execute(conn)?;
-
-  Ok(())
-}
-
-pub fn reset_announced_flags_if_not_today(conn: &mut SqliteConnection) -> Result<(), Error> {
   let today = Local::today().naive_utc();
   let today_month_day = format!("{:02}-{:02}", today.month(), today.day());
 

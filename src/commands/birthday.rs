@@ -1,6 +1,6 @@
 use crate::db::connection::establish_connection;
 use crate::db::models::Birthday;
-use crate::db::queries::{delete_birthday_by_object, get_birthday, insert_birthday, list_birthdays};
+use crate::db::queries::{delete_birthday, get_birthday, insert_birthday, list_birthdays};
 use crate::utils::birthday_utils::sort_birthdays_by_upcoming_date;
 use crate::utils::date_utils::{calculate_age, days_until_next_birthday, format_birthday_with_age, format_date};
 use crate::utils::embed_utils::{create_birthday_delete_embed, create_birthday_info_embed, create_birthday_set_embed, create_empty_birthday_embed, create_error_embed};
@@ -60,7 +60,7 @@ async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
 
   match get_birthday(conn, user_id, i64::from(guild_id)) {
     Ok(Some(birthday)) => {
-      match delete_birthday_by_object(conn, &birthday) {
+      match delete_birthday(conn, &birthday) {
         Ok(_) => {
           let embed = create_birthday_delete_embed(user_id);
 

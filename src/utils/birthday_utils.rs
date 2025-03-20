@@ -1,5 +1,5 @@
 use crate::db::models::Birthday;
-use crate::db::queries::{get_announcement_channel, get_birthdays_today, reset_announced_flags_if_not_today, update_announced_value};
+use crate::db::queries::{get_announcement_channel, get_birthdays_today, reset_announced_flags, update_announced_value};
 use crate::utils::date_utils::{calculate_age, days_until_next_birthday, format_announcment_date};
 use crate::utils::embed_utils::create_birthday_embed;
 use diesel::SqliteConnection;
@@ -24,7 +24,7 @@ pub async fn handle_birthday_announcements(http: &Arc<Http>, db_pool: Arc<Mutex<
     }
   }
 
-  reset_announced_flags_if_not_today(&mut *conn)?;
+  reset_announced_flags(&mut *conn)?;
 
   Ok(())
 }
@@ -48,7 +48,7 @@ pub async fn announce_birthday_to_guild(
   if let Some(channel_id) = get_announcement_channel(conn, guild_id)? {
     match http.get_channel(ChannelId::from(channel_id as u64)).await {
       Ok(Channel::Guild(channel)) => {
-        let (user_mentions, birthday_details) = get_birthday_details(&birthday_entries);
+        let (user_mentions, _birthday_details) = get_birthday_details(&birthday_entries);
 
         let embed = create_birthday_embed(user_mentions);
         channel.send_message(http, CreateMessage::default().embed(embed)).await?;
