@@ -1,3 +1,3 @@
 pub mod birthday;
 pub mod color;
-pub mod settings;
+pub mod set_channel;

@@ -28,7 +28,7 @@ async fn main() {
     commands: vec![
       commands::color::color(),
       commands::birthday::birthday(),
-      commands::settings::settings(),
+      commands::set_channel::setchannel(),
     ],
     event_handler: |ctx, event, framework, data| {
       Box::pin(login_event_handler(

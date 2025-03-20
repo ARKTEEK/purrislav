@@ -5,14 +5,14 @@ use crate::{Context, Error};
 use poise::serenity_prelude::ChannelId;
 use poise::CreateReply;
 
-#[poise::command(slash_command, subcommands("announcments"), subcommand_required)]
-pub async fn settings(_: Context<'_>) -> Result<(), Error> {
+// Sets channels for specific purposes
+#[poise::command(slash_command, subcommands("announce"), subcommand_required)]
+pub async fn setchannel(_: Context<'_>) -> Result<(), Error> {
   Ok(())
 }
 
-/// Sets the channel for birthday announcements.
 #[poise::command(slash_command)]
-async fn announcments(ctx: Context<'_>, channel: ChannelId) -> Result<(), Error> {
+async fn announce(ctx: Context<'_>, channel: ChannelId) -> Result<(), Error> {
   let guild_i = ctx.guild_id().unwrap();
   let conn = &mut establish_connection();
 
