@@ -6,7 +6,12 @@ use poise::serenity_prelude::ChannelId;
 use poise::CreateReply;
 
 // Sets channels for specific purposes
-#[poise::command(slash_command, subcommands("announce"), subcommand_required)]
+#[poise::command(
+  slash_command,
+  subcommands("announce"),
+  required_permissions = "MANAGE_CHANNELS",
+  subcommand_required
+)]
 pub async fn setchannel(_: Context<'_>) -> Result<(), Error> {
   Ok(())
 }
