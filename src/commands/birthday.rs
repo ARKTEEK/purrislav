@@ -4,10 +4,10 @@ use crate::db::queries::{delete_birthday, get_birthday, insert_birthday, list_bi
 use crate::utils::birthday_utils::sort_birthdays_by_upcoming_date;
 use crate::utils::date_utils::{calculate_age, days_until_next_birthday, format_birthday_with_age, format_date};
 use crate::utils::embed_utils::{create_birthday_delete_embed, create_birthday_info_embed, create_birthday_set_embed, create_empty_birthday_embed, create_error_embed};
-use crate::utils::user_utils::get_user_id;
+use crate::utils::user_utils::{check_permission_for_member, get_user_id};
 use crate::{Context, Error};
 use chrono::{NaiveDate, Utc};
-use poise::serenity_prelude::{Color, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, Member};
+use poise::serenity_prelude::{Color, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, Member, Permissions};
 use poise::CreateReply;
 
 #[poise::command(slash_command, subcommands("list", "set", "info", "delete"), subcommand_required)]
@@ -18,7 +18,7 @@ pub async fn birthday(_: Context<'_>) -> Result<(), Error> {
 /// Shows birthday info for a specified member (or your own if none is specified).
 #[poise::command(slash_command)]
 async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
-  let user_id = get_user_id(&ctx, member);
+  let user_id = get_user_id(&ctx, member.as_ref());
   let guild_id = ctx.guild_id().expect("Guild ID is required");
   let conn = &mut establish_connection();
 
@@ -54,8 +54,13 @@ async fn info(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
 /// Deletes the birthday of a specified member (or your own if none is specified).
 #[poise::command(slash_command)]
 async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
-  let user_id = get_user_id(&ctx, member);
+  let user_id = get_user_id(&ctx, member.as_ref());
   let guild_id = ctx.guild_id().expect("Guild ID is required");
+
+  if !check_permission_for_member(&ctx, member.as_ref(), Permissions::MANAGE_EVENTS).await? {
+    return Ok(());
+  }
+
   let conn = &mut establish_connection();
 
   match get_birthday(conn, user_id, i64::from(guild_id)) {
@@ -102,8 +107,13 @@ async fn delete(ctx: Context<'_>, member: Option<Member>) -> Result<(), Error> {
 async fn set(ctx: Context<'_>, member: Option<Member>, #[description = "e.g, 1999-01-01"] date: String) -> Result<(), Error> {
   match NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
     Ok(parsed_date) => {
-      let user_id = get_user_id(&ctx, member);
+      let user_id = get_user_id(&ctx, member.as_ref());
       let guild_id = ctx.guild_id().expect("Guild ID is required");
+
+      if !check_permission_for_member(&ctx, member.as_ref(), Permissions::MANAGE_EVENTS).await? {
+        return Ok(());
+      }
+
       let conn = &mut establish_connection();
 
       match insert_birthday(conn, user_id, i64::from(guild_id), parsed_date) {

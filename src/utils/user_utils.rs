@@ -1,6 +1,7 @@
+use crate::utils::embed_utils::create_error_embed;
 use crate::{Context, Error};
-use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::{Color, EditRole, Member, Role, UserId};
+use poise::serenity_prelude::{Color, EditRole, Member, Permissions, Role, UserId};
+use poise::{serenity_prelude as serenity, CreateReply};
 use serenity::GuildId;
 
 /// Check and get **user specific** role.
@@ -27,7 +28,7 @@ pub async fn get_user_specific_role(
   Ok(None)
 }
 
-pub fn get_user_id(ctx: &Context<'_>, member: Option<Member>) -> i64 {
+pub fn get_user_id(ctx: &Context<'_>, member: Option<&Member>) -> i64 {
   if let Some(member) = member {
     u64::from(member.user.id) as i64
   } else {
@@ -62,4 +63,30 @@ pub async fn create_and_assign_user_specific_role(ctx: Context<'_>, guild_id: Gu
   guild_id.edit_role_position(ctx, new_role_id, highest_position).await?;
 
   Ok(())
+}
+
+pub async fn check_permission_for_member(
+  ctx: &Context<'_>,
+  member: Option<&Member>,
+  required_permission: Permissions,
+) -> Result<bool, Error> {
+  if member.is_some() {
+    if !ctx
+        .author_member()
+        .await
+        .expect("Couldn't get author member, while checking permissions.")
+        .permissions
+        .unwrap()
+        .contains(required_permission)
+    {
+      let embed = create_error_embed(
+        format!("You don't have the required **{}** permission.", required_permission.to_string()),
+        "Make sure you have the required permissions".to_string(),
+      );
+
+      ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
+      return Ok(false);
+    }
+  }
+  Ok(true)
 }
