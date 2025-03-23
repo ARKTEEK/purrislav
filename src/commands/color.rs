@@ -1,6 +1,6 @@
 use crate::utils::color_utils::ColorUtils;
 use crate::utils::embed_utils::{create_color_created_embed, create_color_updated_embed, create_error_embed};
-use crate::utils::user_utils::{create_and_assign_user_specific_role, get_user_specific_role};
+use crate::utils::user_utils::{check_permission_for_member, create_and_assign_user_specific_role, get_user_specific_role};
 use crate::{Context, Error};
 use poise::serenity_prelude::{Color, EditRole, Member, Permissions};
 use poise::CreateReply;
@@ -18,23 +18,8 @@ pub async fn color(
     ctx.author().id
   };
 
-  if member.is_some() {
-    if !ctx
-        .author_member()
-        .await
-        .expect("Couldn't get author member, while checking permissions.")
-        .permissions
-        .unwrap()
-        .contains(Permissions::MANAGE_ROLES)
-    {
-      let embed = create_error_embed(
-        "You don't have the required **MANAGE_ROLES** permission.".to_string(),
-        "Make sure you have required permissions".to_string(),
-      );
-
-      ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
-      return Ok(());
-    }
+  if !check_permission_for_member(&ctx, member.as_ref(), Permissions::MANAGE_ROLES).await? {
+    return Ok(());
   }
 
   match ColorUtils::validate_hex_color(&color) {
