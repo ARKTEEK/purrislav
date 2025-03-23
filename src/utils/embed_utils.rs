@@ -1,4 +1,4 @@
-use poise::serenity_prelude::{ChannelId, Color, CreateEmbed, CreateEmbedFooter, Mentionable};
+use poise::serenity_prelude::{ChannelId, Color, CreateEmbed, CreateEmbedFooter, Mentionable, UserId};
 
 pub fn create_birthday_embed(user_mentions: String) -> CreateEmbed {
   CreateEmbed::new()
@@ -62,3 +62,24 @@ pub fn create_empty_birthday_embed() -> CreateEmbed {
       .footer(CreateEmbedFooter::new("Set your birthdays and make the guild special!"))
 }
 
+pub fn create_color_updated_embed(hex: String, r: u8, g: u8, b: u8, user_id: UserId) -> CreateEmbed {
+  CreateEmbed::new()
+      .title("🎨 Color Updated!")
+      .description(format!(
+        "The role color for <@{}> has been updated to **{}**.",
+        user_id, hex
+      ))
+      .color(Color::from_rgb(r, g, b))
+      .footer(CreateEmbedFooter::new("Enjoy your new color!"))
+}
+
+pub fn create_color_created_embed(hex: String, r: u8, g: u8, b: u8, user_id: UserId) -> CreateEmbed {
+  CreateEmbed::new()
+      .title("🎨 New Role Created!")
+      .description(format!(
+        "A new role with color **{}** has been created and assigned to <@{}>.",
+        hex, user_id
+      ))
+      .color(Color::from_rgb(r, g, b))
+      .footer(CreateEmbedFooter::new("Enjoy your new role!"))
+}

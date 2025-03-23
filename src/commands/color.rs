@@ -1,82 +1,99 @@
 use crate::utils::color_utils::ColorUtils;
-use crate::utils::embed_utils::create_error_embed;
-use crate::utils::user_utils::get_self_role;
+use crate::utils::embed_utils::{create_color_created_embed, create_color_updated_embed, create_error_embed};
+use crate::utils::user_utils::{create_and_assign_user_specific_role, get_user_specific_role};
 use crate::{Context, Error};
-use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, EditRole};
+use poise::serenity_prelude::{Color, EditRole, Member, Permissions};
 use poise::CreateReply;
 
-/// Sets your username color to the specified hex code (e.g., #ff5733).
+/// Sets your username color to the specified hex color (e.g., #ff5733).
 #[poise::command(slash_command)]
-pub async fn color(ctx: Context<'_>, #[description = "e.g., #ff5733"] color: String) -> Result<(), Error> {
+pub async fn color(
+  ctx: Context<'_>,
+  #[description = "e.g., #ff5733"] color: String,
+  member: Option<Member>,
+) -> Result<(), Error> {
+  let target_user_id = if let Some(member) = &member {
+    member.user.id
+  } else {
+    ctx.author().id
+  };
+
+  if member.is_some() {
+    if !ctx
+        .author_member()
+        .await
+        .expect("Couldn't get author member, while checking permissions.")
+        .permissions
+        .unwrap()
+        .contains(Permissions::MANAGE_ROLES)
+    {
+      let embed = create_error_embed(
+        "You don't have the required **MANAGE_ROLES** permission.".to_string(),
+        "Make sure you have required permissions".to_string(),
+      );
+
+      ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
+      return Ok(());
+    }
+  }
+
   match ColorUtils::validate_hex_color(&color) {
-    Ok(_) => match ColorUtils::hex_to_colour(&color) {
-      Ok((r, g, b)) => {
-        let guild_id = ctx.guild_id().expect("Command must be invoked in a guild");
-        let user_id = ctx.author().id;
+    Ok(_) => {
+      let cleaned_color = if color.starts_with('#') {
+        color.clone()
+      } else {
+        format!("#{}", color)
+      };
 
-        let hex_color = format!("{:02x}{:02x}{:02x}", r, g, b);
+      let (r, g, b) = match ColorUtils::hex_to_rgb(&cleaned_color) {
+        Some(rgb) => rgb,
+        None => {
+          let embed = create_error_embed(
+            format!("<@{}> provided an invalid color code.", target_user_id),
+            "Please use a valid hex color code like #ff5733.".to_string());
 
-        match get_self_role(&ctx, guild_id, u64::from(user_id)).await? {
-          Some(mut role) => {
-            let color = Color::from_rgb(r, g, b);
+          ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
+          return Ok(());
+        }
+      };
 
-            role.edit(&ctx, EditRole::from_role(&role).colour(color))
-                .await?;
+      let guild_id = ctx
+          .guild_id()
+          .expect("Command can only be used in a guild.");
 
-            let success_embed = CreateEmbed::new()
-                .title("🎨 Color Updated!")
-                .description(format!(
-                  "Your role color has been updated to **#{hex_color}**."
-                ))
-                .color(color)
-                .footer(CreateEmbedFooter::new("Enjoy your new color!"));
+      match get_user_specific_role(&ctx, guild_id, u64::from(target_user_id)).await? {
+        Some(mut role) => {
+          role.edit(
+            ctx,
+            EditRole::from_role(&role).colour(Color::from_rgb(r, g, b))).await?;
 
-            ctx.send(CreateReply::default().embed(success_embed).ephemeral(true)).await?;
-          }
-          None => {
-            let role_name = format!("{}", user_id);
-            let new_role = EditRole::new()
-                .name(&role_name)
-                .colour(Color::from_rgb(r, g, b))
-                .mentionable(false);
+          ctx.send(
+            CreateReply::default()
+                .embed(create_color_updated_embed(
+                  cleaned_color,
+                  r, g, b,
+                  target_user_id,
+                )).ephemeral(true)).await?;
+        }
+        None => {
+          create_and_assign_user_specific_role(ctx, guild_id, target_user_id, r, g, b).await?;
 
-            let new_role_id = guild_id.create_role(&ctx, new_role).await?.id;
-
-            let member = guild_id.member(ctx, user_id).await?;
-            member.add_role(ctx, new_role_id).await?;
-
-            let roles = guild_id.roles(&ctx).await?;
-            let highest_position = roles
-                .iter()
-                .map(|(_, role)| role.position)
-                .max()
-                .unwrap_or(0);
-
-            guild_id
-                .edit_role_position(&ctx, new_role_id, highest_position)
-                .await?;
-
-            let success_embed = CreateEmbed::new()
-                .title("🎨 New Role Created!")
-                .description(format!(
-                  "A new role with color **#{hex_color}** has been created and assigned to you."
-                ))
-                .color(Color::from_rgb(r, g, b))
-                .footer(CreateEmbedFooter::new("Enjoy your new role!"));
-
-            ctx.send(CreateReply::default().embed(success_embed).ephemeral(true)).await?;
-          }
+          ctx.send(
+            CreateReply::default()
+                .embed(create_color_created_embed(
+                  cleaned_color,
+                  r, g, b,
+                  target_user_id,
+                )).ephemeral(true)).await?;
         }
       }
-      Err(e) => {
-        let embed = create_error_embed(format!("Error: {}", e), "Please provide a valid color code.".to_string());
-        ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
-      }
-    },
+    }
     Err(_) => {
       let embed = create_error_embed(
-        format!("The provided color code **{}** is invalid.", color),
-        "Example: #FF5733".to_string());
+        format!(
+          "<@{}> provided an invalid color code **{}**.",
+          target_user_id, color
+        ), "Example: #FF5733".to_string());
 
       ctx.send(CreateReply::default().embed(embed).ephemeral(true)).await?;
     }
