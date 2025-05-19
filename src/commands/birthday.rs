@@ -196,6 +196,9 @@ async fn paginate_birthday_list(
   let prev_button_id = format!("{}prev", ctx_id);
   let next_button_id = format!("{}next", ctx_id);
 
+  let mut current_page = 0;
+  let total_pages = pages.len();
+  
   let reply = {
     let components = CreateActionRow::Buttons(vec![
       CreateButton::new(&prev_button_id).emoji('◀'),
@@ -208,16 +211,13 @@ async fn paginate_birthday_list(
               .title("🎂 Birthday List")
               .description(&pages[0])
               .color(Color::BLUE)
-              .footer(CreateEmbedFooter::new("Page 1 of 1"))
+              .footer(CreateEmbedFooter::new("Page 1 of {total_pages}"))
               .timestamp(Utc::now())
         )
         .components(vec![components])
   };
 
   ctx.send(reply.ephemeral(true)).await?;
-
-  let mut current_page = 0;
-  let total_pages = pages.len();
 
   while let Some(press) = ComponentInteractionCollector::new(ctx)
       .filter(move |press| press.data.custom_id.starts_with(&ctx_id.to_string()))
