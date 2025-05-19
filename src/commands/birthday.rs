@@ -211,7 +211,7 @@ async fn paginate_birthday_list(
               .title("🎂 Birthday List")
               .description(&pages[0])
               .color(Color::BLUE)
-              .footer(CreateEmbedFooter::new("Page 1 of {total_pages}"))
+              .footer(CreateEmbedFooter::new(format!("Page 1 of {}", total_pages)))
               .timestamp(Utc::now())
         )
         .components(vec![components])
