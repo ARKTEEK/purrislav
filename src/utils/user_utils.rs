@@ -74,7 +74,7 @@ pub async fn check_permission_for_member(
     if !ctx
         .author_member()
         .await
-        .expect("Couldn't get author member, while checking permissions.")
+        .expect("Couldn't get author member while checking permissions.")
         .permissions
         .unwrap()
         .contains(required_permission)

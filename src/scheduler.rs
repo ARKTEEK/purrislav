@@ -1,5 +1,6 @@
 use crate::utils::birthday_utils::handle_birthday_announcements;
 use diesel::SqliteConnection;
+use log::error;
 use poise::serenity_prelude::Http;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -14,7 +15,7 @@ pub async fn start_scheduler(http: Arc<Http>, db_pool: Arc<Mutex<SqliteConnectio
 
     tokio::spawn(async move {
       if let Err(e) = handle_birthday_announcements(&http, db_pool).await {
-        eprintln!("Error during birthday announcement: {:?}", e);
+        error!("Error during birthday announcement: {:?}", e);
       }
     });
   })?;

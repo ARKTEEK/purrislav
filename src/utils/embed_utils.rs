@@ -7,7 +7,7 @@ pub fn create_birthday_embed(user_mentions: String) -> CreateEmbed {
       .fields(vec![
         ("📅 Birthdays Today:", user_mentions, false),
       ])
-      .footer(CreateEmbedFooter::new("Don't forget to set your birthdays!"))
+      .footer(CreateEmbedFooter::new("Don't forget to set your or your friends' birthdays!"))
 }
 
 pub fn create_birthday_info_embed(formatted_birthday: String, days_until: i64) -> CreateEmbed {
@@ -51,7 +51,7 @@ pub fn create_settings_embed(channel: ChannelId) -> CreateEmbed {
       .title("🗣 Announcments Channel Set!")
       .description(format!("Announcments channel has been set to **{}**.", channel.mention()))
       .color(Color::DARK_GREEN)
-      .footer(CreateEmbedFooter::new("Announcments gonna be send there!"))
+      .footer(CreateEmbedFooter::new("Announcments going to be sent there!"))
 }
 
 pub fn create_empty_birthday_embed() -> CreateEmbed {

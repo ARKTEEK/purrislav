@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use diesel::{Insertable, Queryable, QueryableByName, Selectable};
 
 #[derive(Queryable, QueryableByName, Selectable)]

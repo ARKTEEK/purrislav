@@ -3,6 +3,7 @@ use crate::db::queries::{get_announcement_channel, get_birthdays_today, reset_an
 use crate::utils::date_utils::{calculate_age, days_until_next_birthday, format_announcment_date};
 use crate::utils::embed_utils::create_birthday_embed;
 use diesel::SqliteConnection;
+use log::error;
 use poise::serenity_prelude::{Channel, ChannelId, CreateMessage, Http};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -20,7 +21,7 @@ pub async fn handle_birthday_announcements(http: &Arc<Http>, db_pool: Arc<Mutex<
 
   for (guild_id, birthday_entries) in birthdays_by_guild {
     if let Err(e) = announce_birthday_to_guild(http, &mut *conn, guild_id, birthday_entries).await {
-      eprintln!("Error announcing birthdays for guild {}: {:?}", guild_id, e);
+      error!("Error announcing birthdays for guild {}: {:?}", guild_id, e);
     }
   }
 
@@ -61,14 +62,14 @@ pub async fn announce_birthday_to_guild(
         update_announced_value(conn, birthday_ids)?;
       }
       Ok(_) => {
-        eprintln!("Announcement channel {} is not a guild channel for guild {}", channel_id, guild_id);
+        error!("Announcement channel {} is not a guild channel for guild {}", channel_id, guild_id);
       }
       Err(e) => {
-        eprintln!("Error fetching channel {} for guild {}: {:?}", channel_id, guild_id, e);
+        error!("Error fetching channel {} for guild {}: {:?}", channel_id, guild_id, e);
       }
     }
   } else {
-    eprintln!("Announcement channel not set for guild {}", guild_id);
+    error!("Announcement channel not set for guild {}", guild_id);
   }
 
   Ok(())
