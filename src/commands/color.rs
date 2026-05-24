@@ -48,9 +48,9 @@ pub async fn color(
 
       match get_user_specific_role(&ctx, guild_id, u64::from(target_user_id)).await? {
         Some(mut role) => {
-          role.edit(
-            ctx,
-            EditRole::from_role(&role).colour(Color::from_rgb(r, g, b))).await?;
+          if let Err(e) = role.edit(ctx, EditRole::default().colour(Color::from_rgb(r, g, b))).await {
+            return Err(e.into());
+          }
 
           ctx.send(
             CreateReply::default()
