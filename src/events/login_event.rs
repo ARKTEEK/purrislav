@@ -1,4 +1,5 @@
 use crate::{Data, Error};
+use log::info;
 use poise::serenity_prelude::{Context, FullEvent};
 use poise::FrameworkContext;
 
@@ -9,7 +10,7 @@ pub async fn login_event_handler(
 ) -> Result<(), Error> {
   match event {
     FullEvent::Ready { data_about_bot, .. } => {
-      println!("Logged in as {} in {} guilds.",
+      info!("Logged in as {} in {} guilds.",
                data_about_bot.user.name,
                ctx.cache.guild_count());
     }

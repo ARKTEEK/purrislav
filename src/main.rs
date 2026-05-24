@@ -10,10 +10,11 @@ pub mod scheduler;
 use crate::db::connection::establish_connection;
 use crate::events::login_event::login_event_handler;
 use dotenv::var;
+use log::error;
 use poise::serenity_prelude::{ClientBuilder, Error, GatewayIntents, Http};
 use scheduler::start_scheduler;
-use std::fmt::Debug;
-use std::sync::Arc;
+use structured_logger::{Builder, json};
+use std::{fs::{self, OpenOptions}, path::Path, sync::Arc};
 use tokio::sync::Mutex;
 
 type Context<'a> = poise::Context<'a, Data, Error>;
@@ -21,6 +22,8 @@ pub struct Data {}
 
 #[tokio::main]
 async fn main() {
+  init_logger().expect("Failed to initialize application's logger");
+
   let token = var("DISCORD_TOKEN").expect("Missing DISCORD_TOKEN in .env file.");
   let intents = GatewayIntents::non_privileged() | GatewayIntents::GUILD_MEMBERS;
 
@@ -30,7 +33,7 @@ async fn main() {
       commands::birthday::birthday(),
       commands::set_channel::setchannel(),
     ],
-    event_handler: |ctx, event, framework, data| {
+    event_handler: |ctx, event, framework, _| {
       Box::pin(login_event_handler(
         ctx.clone(),
         event.clone(),
@@ -63,10 +66,29 @@ async fn main() {
     let db_pool = conn.clone();
     async move {
       if let Err(e) = start_scheduler(arc_http, db_pool).await {
-        eprintln!("Error occurred while running scheduler: {}", e);
+        error!("Error occurred while running scheduler: {}", e);
       }
     }
   });
 
   client.start().await.unwrap();
+}
+
+fn init_logger() -> Result<(), Error> {
+  let directory = Path::new("logs");
+  let logs = directory.join("logs.log");
+
+  fs::create_dir_all(&directory).expect("Failed to create logs directory");
+
+  let logs_file = OpenOptions::new()
+    .create(true)
+    .append(true)
+    .open(&logs)
+    .expect("Failed to open logs file");
+
+  Builder::new()
+    .with_target_writer("purrislav*", json::new_writer(logs_file))
+    .init();
+
+  Ok(())
 }

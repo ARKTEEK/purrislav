@@ -57,12 +57,12 @@ pub fn format_announcment_date(date: NaiveDate) -> String {
 }
 
 pub fn is_today(birthday: NaiveDate) -> bool {
-  let today = Local::today().naive_utc();
+  let today = Local::now().naive_utc();
   today.month() == birthday.month() && today.day() == birthday.day()
 }
 
 pub fn calculate_age(birthday: NaiveDate) -> i32 {
-  let today = Local::today().naive_utc();
+  let today = Local::now().naive_utc();
   let mut age = today.year() - birthday.year();
 
   if today.month() < birthday.month() || (today.month() == birthday.month() && today.day() < birthday.day()) {

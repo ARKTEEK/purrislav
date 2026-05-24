@@ -1,4 +1,13 @@
-/target
-.idea
+target
 migrations/.keep
-database.db
+logs
+
+.idea
+.zed
+.vscode
+.env
+
+**.sqlite
+**.db
+
+purrislav

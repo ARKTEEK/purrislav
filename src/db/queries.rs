@@ -2,7 +2,6 @@ use crate::db::models::{Birthday, NewBirthday, NewGuildSettings};
 use crate::db::schema::birthdays;
 use crate::db::schema::guild_settings;
 use chrono::{Datelike, Local, NaiveDate};
-use diesel::associations::HasTable;
 use diesel::result::Error;
 use diesel::{sql_query, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection};
 
@@ -35,7 +34,7 @@ pub fn get_birthday(conn: &mut SqliteConnection, user: i64, guild_id: i64) -> Re
 }
 
 pub fn get_birthdays_today(conn: &mut SqliteConnection) -> Result<Vec<Birthday>, Error> {
-  let today = Local::today().naive_utc();
+  let today = Local::now().naive_utc();
   let today_month_day = (today.month(), today.day());
 
   let query = format!(
@@ -79,7 +78,7 @@ pub fn update_announced_value(conn: &mut SqliteConnection, birthday_ids: Vec<i32
 }
 
 pub fn reset_announced_flags(conn: &mut SqliteConnection) -> Result<(), Error> {
-  let today = Local::today().naive_utc();
+  let today = chrono::DateTime::date_naive(&Local::now());
   let today_month_day = format!("{:02}-{:02}", today.month(), today.day());
 
   let query = format!(
